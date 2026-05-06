@@ -1,8 +1,8 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Building, ElectricityBill, Tenant, User } from '../types';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { Building, ElectricityBill, Tenant, User } from "../types";
 
-const STORAGE_PREFIX = 'rentalms';
-const USE_LOCAL_DB = import.meta.env.VITE_USE_LOCAL_DB === 'true';
+const STORAGE_PREFIX = "rentalms";
+const USE_LOCAL_DB = import.meta.env.VITE_USE_LOCAL_DB === "true";
 
 type Row = Building | Tenant | ElectricityBill | User | Record<string, unknown>;
 
@@ -13,7 +13,9 @@ if (!USE_LOCAL_DB) {
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase URL and anon key are required when VITE_USE_LOCAL_DB=false');
+    throw new Error(
+      "Supabase URL and anon key are required when VITE_USE_LOCAL_DB=false",
+    );
   }
 
   supabaseClient = createClient(supabaseUrl, supabaseKey);
@@ -53,7 +55,7 @@ class LocalQuery<T extends Row> {
     this.table = table;
   }
 
-  select(columns: string | Array<keyof T> = '*') {
+  select(columns: string | Array<keyof T> = "*") {
     if (Array.isArray(columns)) {
       this.selectedColumns = columns;
     }
@@ -68,13 +70,16 @@ class LocalQuery<T extends Row> {
   private resolveRows(): T[] {
     let rows = loadTable<T>(this.table);
     if (this.whereClauses.length > 0) {
-      rows = this.whereClauses.reduce((filtered, [column, value]) => applyFilter(filtered, column, value), rows);
+      rows = this.whereClauses.reduce(
+        (filtered, [column, value]) => applyFilter(filtered, column, value),
+        rows,
+      );
     }
     return rows;
   }
 
   async maybe() {
-    return this.select('*');
+    return this.select("*");
   }
 
   async then(onfulfilled: (value: T[]) => unknown) {
@@ -101,7 +106,11 @@ class LocalQuery<T extends Row> {
     const updated: T[] = [];
     const result = rows.map((row) => {
       if (this.whereClauses.every(([column, value]) => row[column] === value)) {
-        const next = { ...row, ...values, updated_at: new Date().toISOString() } as T;
+        const next = {
+          ...row,
+          ...values,
+          updated_at: new Date().toISOString(),
+        } as T;
         updated.push(next);
         return next;
       }
@@ -113,9 +122,14 @@ class LocalQuery<T extends Row> {
 
   async delete() {
     const rows = loadTable<T>(this.table);
-    const remaining = rows.filter((row) => !this.whereClauses.every(([column, value]) => row[column] === value));
+    const remaining = rows.filter(
+      (row) =>
+        !this.whereClauses.every(([column, value]) => row[column] === value),
+    );
     saveTable(this.table, remaining);
-    const removed = rows.filter((row) => this.whereClauses.every(([column, value]) => row[column] === value));
+    const removed = rows.filter((row) =>
+      this.whereClauses.every(([column, value]) => row[column] === value),
+    );
     return { data: removed };
   }
 
@@ -126,20 +140,22 @@ class LocalQuery<T extends Row> {
 
 class SupabaseQuery<T extends Row> {
   private table: string;
+  private baseQuery: any;
   private query: any;
   private isExecuted = false;
 
   constructor(table: string) {
     this.table = table;
-    this.query = supabaseClient!.from(table);
+    this.baseQuery = supabaseClient!.from(table);
+    this.query = this.baseQuery.select("*");
   }
 
-  select(columns: string | Array<keyof T> = '*') {
+  select(columns: string | Array<keyof T> = "*") {
     if (this.isExecuted) return this;
     if (Array.isArray(columns)) {
-      this.query = this.query.select(columns.join(','));
+      this.query = this.baseQuery.select(columns.join(","));
     } else {
-      this.query = this.query.select(columns);
+      this.query = this.baseQuery.select(columns);
     }
     return this;
   }
@@ -151,12 +167,15 @@ class SupabaseQuery<T extends Row> {
   }
 
   async maybe() {
-    return this.select('*');
+    return this.select("*");
   }
 
   async then(onfulfilled: (value: T[]) => unknown) {
     if (this.isExecuted) {
       return Promise.resolve(onfulfilled(this.query));
+    }
+    if (this.query === this.baseQuery) {
+      this.query = this.query.select("*");
     }
     this.isExecuted = true;
     const { data, error } = await this.query;
@@ -166,7 +185,7 @@ class SupabaseQuery<T extends Row> {
 
   async insert(records: Partial<T>[]) {
     this.isExecuted = true;
-    const { data, error } = await this.query.insert(records);
+    const { data, error } = await this.baseQuery.insert(records);
     if (error) throw error;
     return { data };
   }
@@ -189,6 +208,9 @@ class SupabaseQuery<T extends Row> {
     if (this.isExecuted) {
       return this.query;
     }
+    if (this.query === this.baseQuery) {
+      this.query = this.query.select("*");
+    }
     this.isExecuted = true;
     const { data, error } = await this.query;
     if (error) throw error;
@@ -198,22 +220,24 @@ class SupabaseQuery<T extends Row> {
 
 export const supabase = {
   from<T extends Row>(table: string) {
-    return USE_LOCAL_DB ? new LocalQuery<T>(table) : new SupabaseQuery<T>(table);
+    return USE_LOCAL_DB
+      ? new LocalQuery<T>(table)
+      : new SupabaseQuery<T>(table);
   },
 };
 
 export function initializeLocalSeed() {
   if (!USE_LOCAL_DB) return; // Skip seeding for Supabase
 
-  const users = loadTable<User>('users');
+  const users = loadTable<User>("users");
   if (users.length === 0) {
     const user: User = {
       id: createId(),
-      email: 'owner@example.com',
-      password: 'password123',
-      user_metadata: { full_name: 'Property Owner' },
+      email: "owner@example.com",
+      password: "password123",
+      user_metadata: { full_name: "Property Owner" },
       created_at: new Date().toISOString(),
     };
-    saveTable('users', [user]);
+    saveTable("users", [user]);
   }
 }

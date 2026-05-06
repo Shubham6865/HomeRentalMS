@@ -1,9 +1,9 @@
-import { supabase } from './db';
-import { User } from '../types';
+import { supabase } from "./db";
+import { User } from "../types";
 
-const USE_LOCAL_DB = import.meta.env.VITE_USE_LOCAL_DB === 'true';
-const sessionKey = 'rentalms-session';
-const userKey = 'rentalms:users';
+const USE_LOCAL_DB = import.meta.env.VITE_USE_LOCAL_DB === "true";
+const sessionKey = "rentalms-session";
+const userKey = "rentalms:users";
 
 export function getSessionUser(): User | null {
   if (!USE_LOCAL_DB) {
@@ -28,20 +28,26 @@ export function clearSessionUser() {
 export async function findUserByEmail(email: string): Promise<User | null> {
   if (!USE_LOCAL_DB) {
     // For Supabase, query the users table
-    const users = await supabase.from<User>('users').eq('email', email.toLowerCase()).get();
+    const users = await supabase
+      .from<User>("users")
+      .eq("email", email.toLowerCase())
+      .get();
     return users.length > 0 ? users[0] : null;
   }
 
   const stored = localStorage.getItem(userKey);
   if (!stored) return null;
   const users: User[] = JSON.parse(stored);
-  return users.find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? null;
+  return (
+    users.find((user) => user.email.toLowerCase() === email.toLowerCase()) ??
+    null
+  );
 }
 
 export async function createUser(user: User) {
   if (!USE_LOCAL_DB) {
     // For Supabase, insert into users table
-    await supabase.from<User>('users').insert([user]);
+    await supabase.from<User>("users").insert([user]);
     return;
   }
 

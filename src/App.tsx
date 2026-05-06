@@ -1,12 +1,20 @@
-import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Home, Building2, User, Zap } from "lucide-react";
+import { useState } from "react";
+import {
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import { Home, Building2, User, Zap, Menu, X, LogOut } from "lucide-react";
 import { Dashboard } from "./pages/Dashboard";
 import { Buildings } from "./pages/Buildings";
 import { Tenants } from "./pages/Tenants";
 import { Electricity } from "./pages/Electricity";
 import { Login } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
-import { getSessionUser } from "./lib/auth";
+import { getSessionUser, clearSessionUser } from "./lib/auth";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
@@ -26,33 +34,60 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const user = getSessionUser();
+  const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    clearSessionUser();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 rounded-3xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* 🔹 HEADER */}
+        <header className="mb-6 rounded-3xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl backdrop-blur-sm">
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">
                 RentalMS
               </p>
-              <h1 className="mt-2 text-3xl font-semibold text-white">
-                Rental management for buildings, tenants, and billing
-              </h1>
             </div>
-            {user ? (
-              <div className="rounded-2xl bg-slate-950/80 px-4 py-3 text-sm text-slate-300 shadow-inner shadow-slate-950/40 sm:text-right">
+
+            {user && (
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden ml-4 rounded-lg p-2 hover:bg-slate-800 transition"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-6 w-6 text-slate-200" />
+                ) : (
+                  <Menu className="h-6 w-6 text-slate-200" />
+                )}
+              </button>
+            )}
+          </div>
+        </header>
+
+        {/* 🔹 MAIN */}
+        <main className="grid flex-1 gap-6 lg:grid-cols-[280px_1fr]">
+          {/* 🔹 SIDEBAR / MOBILE MENU */}
+          <nav
+            className={`rounded-3xl border border-slate-800 bg-slate-900/70 p-4 shadow-xl backdrop-blur-sm ${
+              user && !mobileMenuOpen ? "hidden lg:block" : ""
+            }`}
+          >
+            {/* ✅ USER INFO */}
+            {user && (
+              <div className="mb-4 rounded-2xl bg-slate-950/80 px-4 py-3 text-sm text-slate-300">
                 Logged in as{" "}
                 <span className="font-semibold text-cyan-300">
                   {user.user_metadata.full_name}
                 </span>
               </div>
-            ) : null}
-          </div>
-        </header>
+            )}
 
-        <main className="grid flex-1 gap-6 lg:grid-cols-[280px_1fr]">
-          <nav className="rounded-3xl border border-slate-800 bg-slate-900/70 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-sm">
+            {/* ✅ NAV ITEMS */}
             <div className="space-y-3">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -60,6 +95,7 @@ function App() {
                   <Link
                     key={item.to}
                     to={item.to}
+                    onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-cyan-500/10 hover:text-cyan-300"
                   >
                     <Icon className="h-5 w-5" />
@@ -68,9 +104,21 @@ function App() {
                 );
               })}
             </div>
+
+            {/* ✅ LOGOUT */}
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="mt-6 w-full flex items-center justify-center gap-2 rounded-2xl bg-red-500/20 px-4 py-3 text-sm font-medium text-red-300 hover:bg-red-500/30 border border-red-500/50"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            )}
           </nav>
 
-          <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-sm">
+          {/* 🔹 CONTENT */}
+          <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-4 shadow-xl backdrop-blur-sm">
             <Routes>
               <Route
                 path="/"

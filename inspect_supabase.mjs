@@ -1,0 +1,13 @@
+import { createClient } from '@supabase/supabase-js';
+const url = 'https://iuxnqzmiojrkgsgoflhh.supabase.co';
+const key = 'sb_publishable_r96xHnJmxULbfsAMjd704Q_rX_XtxMy';
+const supabase = createClient(url, key);
+const q = supabase.from('users');
+console.log('q has eq?', typeof q.eq);
+console.log('q has select?', typeof q.select);
+const r = q.select('*');
+console.log('r type', Object.prototype.toString.call(r));
+console.log('r has eq?', typeof r.eq);
+console.log('r has select?', typeof r.select);
+const s = q.select('id');
+console.log('s has eq?', typeof s.eq);
