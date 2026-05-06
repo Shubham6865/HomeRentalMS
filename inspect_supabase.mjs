@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-const url = 'https://iuxnqzmiojrkgsgoflhh.supabase.co';
-const key = 'sb_publishable_r96xHnJmxULbfsAMjd704Q_rX_XtxMy';
+const url = process.env.VITE_SUPABASE_URL;
+const key = process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(url, key);
 const q = supabase.from('users');
 console.log('q has eq?', typeof q.eq);
